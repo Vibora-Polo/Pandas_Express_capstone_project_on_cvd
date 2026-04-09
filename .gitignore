@@ -1,0 +1,6 @@
+# Ignore raw data
+data/raw/
+
+# Ignore large files
+*.csv
+*.xlsx
