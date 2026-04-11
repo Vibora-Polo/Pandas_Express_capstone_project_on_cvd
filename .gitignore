@@ -4,3 +4,4 @@ data/raw/
 # Ignore large files
 *.csv
 *.xlsx
+*john.ipynb
