@@ -1,5 +1,8 @@
 # Ignore raw data
-data/raw/
+data/raw/*
+
+#Allow this specific file (for Git LFS)
+!data/raw/LLCP2024.XPT
 
 # Ignore large files
 *.csv
