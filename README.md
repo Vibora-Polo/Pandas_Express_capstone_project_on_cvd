@@ -46,7 +46,7 @@ Pandas_Express_capstone_project_on_cvd/
 
 ---
 
-## Quick Start
+## Quick Overview
 
 ### Prerequisites
 
@@ -298,7 +298,7 @@ The deployment notebook contains a complete **Streamlit CVD Risk Screening App**
 
 - **Sidebar inputs** for all 16 features with human-readable labels and sensible range controls
 - **Three risk scores** displayed side-by-side: Logistic Regression, Random Forest, and Ensemble Average
-- **Traffic-light risk classification:** 🟢 Low (<30%) · 🟡 Moderate (30–50%) · 🔴 High (>50%)
+- **Traffic-light risk classification:**  Low (<30%) ·  Moderate (30–50%) ·  High (>50%)
 - **Plain-language interpretation guide** with guidance on when to seek clinical care
 - **Model caching** via `@st.cache_resource` for fast repeated predictions
 
@@ -392,12 +392,12 @@ This project satisfies all Phase 5 capstone rubric requirements:
 
 | Name | Role |
 |------|------|
-| **Jeffrey Gathigi** | Lead Data Scientist — Model development & hyperparameter tuning |
+| **Jeffrey Gathigi** | Scrum Master— Model development & hyperparameter tuning |
 | **Jared Mongeri** | ML Engineer — Pipeline architecture & SMOTE implementation |
-| **Monicah Wairimu** | Data Analyst — EDA, visualisations & feature engineering |
-| **Mercy Kangangi** | Business Intelligence — Stakeholder analysis & clinical interpretation |
+| **Monicah Wairimu** | Data Scientist — EDA, visualisations & feature engineering |
+| **Mercy Kangangi** | ML Engineer- Data analysis, Documentation & Stakeholder insights|
 | **Kelvin Ngumo** | Data Engineer — BRFSS data processing, cleaning & Git management |
-| **John Awallah** | Research & Documentation — Literature review, business understanding & reporting |
+| **John Awallah** |Team Lead — Literature review, business understanding & reporting |
 
 ---
 
