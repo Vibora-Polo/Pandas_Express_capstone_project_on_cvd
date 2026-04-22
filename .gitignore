@@ -8,3 +8,10 @@ data/raw/*
 *.csv
 *.xlsx
 *john.ipynb
+#ignore environments
+streamlit_env/
+.venv/
+venv/
+#ignore python cache
+_pycache_/
+*.pyc 
