@@ -242,9 +242,7 @@ with tab2:
         else:
             for rec in recommendations:
                 st.write(f"- {rec}")
-        st.subheader("Risk Level")
-        st.write(f"Estimated category: {category}")
-
+      
         st.subheader("Key Inputs")
         st.table(pd.DataFrame(st.session_state.features.items(), columns=["Feature", "Value"]))
         
