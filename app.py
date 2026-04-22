@@ -56,7 +56,14 @@ def get_risk_category(prob):
 
 def predict(features):
     df = pd.DataFrame([features])
+    #add missing columns with default value: 0
+    for col in FEATURE_NAMES:
+        if col not in df.columns:
+            df[col] = 0
+
     df = df[FEATURE_NAMES]  # enforce correct order
+    
+    #scale
     scaled = scaler.transform(df)
 
     lr = lr_model.predict_proba(scaled)[0][1]
