@@ -1,389 +1,258 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pickle
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-import plotly.express as px
+import joblib
 import plotly.graph_objects as go
 
-# Page configuration
+
+# =========================
+# PAGE CONFIG
+# =========================
+
 st.set_page_config(
-    page_title="CVD Risk Screening",
-    page_icon="❤️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="CVD Risk Assessment",
+    page_icon="CVD",
+    layout="wide"
 )
 
-# Custom CSS
-st.markdown("""
-    <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #d62728;
-        margin-bottom: 1rem;
-    }
-    .risk-high { color: #d62728; font-weight: bold; }
-    .risk-medium { color: #ff7f0e; font-weight: bold; }
-    .risk-low { color: #2ca02c; font-weight: bold; }
-    </style>
-""", unsafe_allow_html=True)
+# =========================
+# LOAD MODELS
+# =========================
 
 @st.cache_resource
 def load_models():
-    """Load pre-trained models"""
-    try:
-        with open('models/logistic_regression_model.pkl', 'rb') as f:
-            lr_model = pickle.load(f)
-        with open('models/random_forest_model.pkl', 'rb') as f:
-            rf_model = pickle.load(f)
-        with open('models/scaler.pkl', 'rb') as f:
-            scaler = pickle.load(f)
-        return lr_model, rf_model, scaler
-    except FileNotFoundError:
-        st.error("Models not found. Please train models first.")
-        return None, None, None
+    lr_model = joblib.load('models/logistic_regression_model.pkl')
+    rf_model = joblib.load('models/random_forest_model.pkl')
+    scaler = joblib.load('models/scaler.pkl')
+    return lr_model, rf_model, scaler
 
-def get_risk_category(probability):
-    """Categorize risk level"""
-    if probability < 0.2:
-        return "Low Risk", "risk-low"
-    elif probability < 0.5:
-        return "Moderate Risk", "risk-medium"
+lr_model, rf_model, scaler = load_models()
+
+# =========================
+# FEATURE ORDER (IMPORTANT)
+# =========================
+
+FEATURE_NAMES = [
+    '_AGEG5YR', '_SEX', 'SMOKE100', 'SMOKDAY2', 'EXERANY2', 'ALCDAY4',
+    'DIABETE4', 'GENHLTH', 'PHYSHLTH', 'MENTHLTH', '_BMI5', 'WEIGHT2',
+    'HEIGHT3', 'CHECKUP1', 'MEDCOST1', '_TOTINDA'
+]
+
+# =========================
+# FUNCTIONS
+# =========================
+
+def calculate_bmi(weight, height):
+    height_m = height / 100
+    return weight / (height_m ** 2)
+
+def get_risk_category(prob):
+    if prob < 0.15:
+        return "Low Risk"
+    elif prob < 0.30:
+        return "Moderate Risk"
     else:
-        return "High Risk", "risk-high"
+        return "High Risk"
 
-def main():
-    # Sidebar for navigation
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Select Page:", 
-                            ["Home", "Risk Assessment", "About", "FAQ"])
-    
-    if page == "Home":
-        show_home()
-    elif page == "Risk Assessment":
-        show_risk_assessment()
-    elif page == "About":
-        show_about()
-    elif page == "FAQ":
-        show_faq()
+def predict(features):
+    df = pd.DataFrame([features])
+    #add missing columns with default value: 0
+    for col in FEATURE_NAMES:
+        if col not in df.columns:
+            df[col] = 0
 
-def show_home():
-    """Home page"""
-    st.markdown('<p class="main-header">🫀 Cardiovascular Risk Screening for Kenyans</p>', 
-                unsafe_allow_html=True)
+    df = df[FEATURE_NAMES]  # enforce correct order
     
+    #scale
+    scaled = scaler.transform(df)
+
+    lr = lr_model.predict_proba(scaled)[0][1]
+    rf = rf_model.predict_proba(scaled)[0][1]
+
+    return lr, rf
+
+# =========================
+# UI
+# =========================
+
+st.title("Cardiovascular Risk Assessment Tool")
+st.write("Enter your details to estimate cardiovascular risk.")
+
+tab1, tab2, tab3 = st.tabs(["Assessment", "Results", "About"])
+
+# =========================
+# TAB 1 - INPUT
+# =========================
+
+with tab1:
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.markdown("""
-        ### About This Tool
-        
-        Cardiovascular disease (CVD) is the leading cause of death globally and a rapidly 
-        growing crisis in Kenya.
-        
-        **Key Statistics:**
-        - CVD accounts for ~30% of all deaths in Kenya
-        - Driven by modifiable risk factors: tobacco use, physical inactivity, obesity, 
-          diabetes, hypertension
-        - Most Kenyans interact with health system only when acutely ill
-        
-        This tool provides a data-driven screening method to identify individuals at risk 
-        of cardiovascular disease early.
-        """)
-    
+        age_map = {
+    "18–24": 1,
+    "25–29": 2,
+    "30–34": 3,
+    "35–39": 4,
+    "40–44": 5,
+    "45–49": 6,
+    "50–54": 7,
+    "55–59": 8,
+    "60–64": 9,
+    "65–69": 10,
+    "70–74": 11,
+    "75–79": 12,
+    "80+": 13
+}
+
+        age_label = st.selectbox("Age Group", list(age_map.keys()))
+        age = age_map[age_label]
+        sex = st.radio("Sex", [1, 2], format_func=lambda x: "Male" if x == 1 else "Female")
+
     with col2:
-        st.info("""
-        ℹ️ **DISCLAIMER**
-        
-        This tool is for RESEARCH and EDUCATION purposes only.
-        
-        ⚠️ NOT validated for clinical use in Kenya
-        ⚠️ NOT a replacement for medical judgment
-        ⚠️ Should NOT be used without confirmation from a healthcare provider
-        """)
-    
-    st.markdown("---")
-    st.subheader("Getting Started")
-    st.markdown("""
-    1. Navigate to **Risk Assessment** in the sidebar
-    2. Enter your health information
-    3. Get your personalized risk score
-    4. Receive recommendations for next steps
-    """)
+        weight = st.number_input("Weight (kg)", 30, 300, 70)
+        height = st.number_input("Height (cm)", 100, 250, 170)
+        bmi = calculate_bmi(weight, height)
+        st.write(f"BMI: {bmi:.1f}")
 
-def show_risk_assessment():
-    """Risk assessment page"""
-    st.markdown('<p class="main-header">📋 Cardiovascular Risk Assessment</p>', 
-                unsafe_allow_html=True)
-    
-    lr_model, rf_model, scaler = load_models()
-    
-    if lr_model is None or rf_model is None:
-        st.error("Models not available. Please ensure models are trained and saved.")
-        return
-    
-    # Create input form
-    with st.form("risk_assessment_form"):
-        st.subheader("Please provide your health information:")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            age_group = st.selectbox(
-                "Age Group",
-                options=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
-                help="Select your age group (1=18-24, 13=80+)"
-            )
-            
-            sex = st.radio(
-                "Biological Sex",
-                options=[1, 2],
-                format_func=lambda x: "Male" if x == 1 else "Female"
-            )
-            
-            smoke100 = st.radio(
-                "Have you smoked 100+ cigarettes in your lifetime?",
-                options=[1, 2],
-                format_func=lambda x: "Yes" if x == 1 else "No"
-            )
-            
-            smokday = st.selectbox(
-                "Do you currently smoke?",
-                options=[1, 2, 3],
-                format_func=lambda x: ["Every day", "Some days", "Not at all"][x-1]
-            )
-            
-            exercise = st.radio(
-                "Do you exercise ≥30 min, ≥5 days/week?",
-                options=[1, 2],
-                format_func=lambda x: "Yes" if x == 1 else "No"
-            )
-        
-        with col2:
-            alcohol = st.number_input(
-                "Days per week with alcohol consumption",
-                min_value=0, max_value=7, step=1
-            )
-            
-            diabetes = st.radio(
-                "Have you been diagnosed with diabetes?",
-                options=[1, 2],
-                format_func=lambda x: "Yes" if x == 1 else "No"
-            )
-            
-            gen_health = st.selectbox(
-                "General Health Status",
-                options=[1, 2, 3, 4, 5],
-                format_func=lambda x: ["Excellent", "Very Good", "Good", "Fair", "Poor"][x-1]
-            )
-            
-            phys_health = st.number_input(
-                "Days physical health was not good (0-30)",
-                min_value=0, max_value=30, step=1
-            )
-            
-            ment_health = st.number_input(
-                "Days mental health was not good (0-30)",
-                min_value=0, max_value=30, step=1
-            )
-        
-        # BMI calculation
-        st.subheader("Body Measurements")
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            height_cm = st.number_input(
-                "Height (cm)",
-                min_value=100, max_value=250, step=1
-            )
-        
-        with col4:
-            weight_kg = st.number_input(
-                "Weight (kg)",
-                min_value=30, max_value=200, step=1
-            )
-        
-        # Calculate BMI
-        bmi = weight_kg / ((height_cm / 100) ** 2)
-        st.write(f"Your BMI: **{bmi:.1f}**")
-        
-        # Additional inputs
-        col5, col6 = st.columns(2)
-        
-        with col5:
-            checkup = st.selectbox(
-                "Last routine checkup",
-                options=[1, 2, 3, 4, 5],
-                format_func=lambda x: ["< 1 year ago", "1-2 years ago", "2-5 years ago", 
-                                       "> 5 years ago", "Never"][x-1]
-            )
-        
-        with col6:
-            medcost = st.radio(
-                "Could not afford medical care?",
-                options=[1, 2],
-                format_func=lambda x: "Yes" if x == 1 else "No"
-            )
-        
-        # Activity level (derived)
-        activity = 1 if exercise == 1 else 2
-        
-        # Create input array
-        input_data = np.array([[
-            age_group, sex, smoke100, smokday, exercise, alcohol,
-            diabetes, gen_health, phys_health, ment_health, bmi,
-            weight_kg, height_cm, checkup, medcost, activity
-        ]])
-        
-        submit_button = st.form_submit_button("🔍 Calculate Risk Score")
-    
-    if submit_button:
-        # Scale input
-        input_scaled = scaler.transform(input_data)
-        
-        # Get predictions from both models
-        lr_prob = lr_model.predict_proba(input_scaled)[0, 1]
-        rf_prob = rf_model.predict_proba(input_scaled)[0, 1]
-        
-        # Average predictions
-        avg_prob = (lr_prob + rf_prob) / 2
-        
-        # Display results
-        st.markdown("---")
-        st.subheader("📊 Your Results")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            risk_label, risk_class = get_risk_category(avg_prob)
-            st.markdown(f'<p class="{risk_class}">{risk_label}</p>', 
-                       unsafe_allow_html=True)
-            st.metric("Risk Score", f"{avg_prob:.1%}")
-        
-        with col2:
-            st.metric("Logistic Regression", f"{lr_prob:.1%}")
-            st.caption("Score from Logistic Regression model")
-        
-        with col3:
-            st.metric("Random Forest", f"{rf_prob:.1%}")
-            st.caption("Score from Random Forest model")
-        
-        # Provide recommendations
-        st.markdown("---")
-        st.subheader("💡 Recommendations")
-        
-        recommendations = []
-        
-        if smoke100 == 1 or smokday != 3:
-            recommendations.append("🚭 **Smoking Cessation**: Quitting smoking significantly reduces CVD risk")
-        
-        if exercise == 2:
-            recommendations.append("🏃 **Physical Activity**: Aim for at least 150 minutes of moderate activity per week")
-        
-        if bmi > 25:
-            recommendations.append(f"⚖️ **Weight Management**: Your BMI is {bmi:.1f}. Consider weight reduction strategies")
-        
-        if diabetes == 1:
-            recommendations.append("🩺 **Diabetes Management**: Regular monitoring and management is critical")
-        
-        if gen_health >= 4:
-            recommendations.append("👨‍⚕️ **Medical Consultation**: Schedule a check-up with your healthcare provider")
-        
-        if recommendations:
-            for rec in recommendations:
-                st.info(rec)
-        else:
-            st.success("✅ Keep up the healthy lifestyle!")
-        
-        # Next steps
-        st.markdown("---")
-        st.subheader("🔄 Next Steps")
-        st.markdown("""
-        1. **Share with Healthcare Provider**: Take this assessment to your doctor
-        2. **Get Confirmed Testing**: Request blood pressure, cholesterol, and glucose tests
-        3. **Develop Action Plan**: Work with your provider on behavior change strategies
-        4. **Follow-up**: Reassess your risk annually or after major lifestyle changes
-        """)
+    col3, col4 = st.columns(2)
 
-def show_about():
-    """About page"""
-    st.markdown('<p class="main-header">ℹ️ About This Project</p>', 
-                unsafe_allow_html=True)
-    
-    st.markdown("""
-    ### Project Overview
-    
-    This project develops a data-driven cardiovascular risk screening tool tailored for 
-    Kenyans using machine learning techniques.
-    
-    ### Data Source
-    
-    **CDC BRFSS 2024 Dataset**
-    - 457,670 adult respondents
-    - Self-reported behavioral and clinical factors
-    - No invasive tests required
-    
-    ### Methodology
-    
-    **Machine Learning Models:**
-    - Logistic Regression
-    - Random Forest Classifier
-    - SMOTE for handling class imbalance
-    
-    **Risk Factors Included:**
-    - Demographic: Age, Sex
-    - Behavioral: Smoking, Physical Activity, Alcohol Use
-    - Clinical: Diabetes, General Health, BMI
-    - Healthcare Access: Routine Checkups, Medical Cost Barriers
-    
-    ### Team
-    This is a group project by the team at Vibora-Polo.
-    
-    ### Citation
-    CDC BRFSS: https://www.cdc.gov/brfss/
-    
-    ### Important Note
-    ⚠️ This tool uses U.S. data as a proof-of-concept and should be recalibrated 
-    with Kenyan population data before clinical deployment.
-    """)
+    with col3:
+        smoke100 = st.radio("Smoked 100+ cigarettes?", [1, 2], format_func=lambda x: "Yes" if x == 1 else "No")
+        smoking_map = {
+            "Every day": 1,
+            "Some days": 2,
+            "Not at all": 3
+        }
+        smoking_label = st.selectbox("Current smoking frequency", list(smoking_map.keys()))
+        smokday2 = smoking_map[smoking_label]
+        exerany2 = st.radio("Regular exercise?", [1, 2], format_func=lambda x: "Yes" if x == 1 else "No")
 
-def show_faq():
-    """FAQ page"""
-    st.markdown('<p class="main-header">❓ Frequently Asked Questions</p>', 
-                unsafe_allow_html=True)
-    
-    faqs = {
-        "How accurate is this tool?": 
-            "The model achieves 80% accuracy and 0.80 ROC-AUC on test data. However, this "
-            "is based on U.S. data and should be validated on Kenyan populations.",
-        
-        "Can this replace a doctor's diagnosis?":
-            "No. This is a screening tool only. Always consult with a healthcare provider "
-            "for proper diagnosis and treatment.",
-        
-        "What does the risk score mean?":
-            "The score (0-100%) represents the probability of having cardiovascular disease "
-            "based on your entered information.",
-        
-        "Why use U.S. data?":
-            "Kenya doesn't have a large-scale CVD survey yet. U.S. data is used for "
-            "proof-of-concept. Future versions will use Kenyan data.",
-        
-        "What are the main CVD risk factors?":
-            "Smoking, physical inactivity, obesity (high BMI), diabetes, hypertension, "
-            "and high cholesterol.",
-        
-        "Can this predict future CVD?":
-            "This assesses current risk based on reported factors. It's not a longitudinal "
-            "prediction but a current risk snapshot.",
+    with col4:
+        diabete4 = st.radio("Diabetes?", [1, 2], format_func=lambda x: "Yes" if x == 1 else "No")
+        genhlth = st.slider("General health (1=Excellent, 5=Poor)", 1, 5, 3)
+        physhlth = st.slider("Physical unhealthy days", 0, 30, 0)
+
+    col5, col6 = st.columns(2)
+
+    with col5:
+        menthlth = st.slider("Mental unhealthy days", 0, 30, 0)
+        alcday4 = st.number_input("Alcohol days/week", 0, 7, 2)
+
+    with col6:
+        checkup_map = {
+            "Within the past year": 1,
+            "1–2 years ago": 2,
+            "2–5 years ago": 3,
+            "More than 5 years ago": 4,
+            "Never": 5
+        }
+
+        checkup_label = st.selectbox("Time since last medical checkup", list(checkup_map.keys()))
+        checkup1 = checkup_map[checkup_label]
+        medcost1 = st.radio("Could not afford care?", [1, 2], format_func=lambda x: "Yes" if x == 1 else "No")
+
+    activity_map = {
+        "Inactive (no regular activity)": 1,
+        "Moderately active": 2,
+        "Highly active": 3
     }
-    
-    for question, answer in faqs.items():
-        with st.expander(f"**{question}**"):
-            st.write(answer)
 
-if __name__ == "__main__":
-    main()
+    activity_label = st.selectbox("Physical activity level", list(activity_map.keys()))
+    totinda = activity_map[activity_label]
+
+    features = {
+        '_AGEG5YR': age,
+        '_SEX': sex,
+        'SMOKE100': smoke100,
+        'SMOKDAY2': smokday2,
+        'EXERANY2': exerany2,
+        'ALCDAY4': alcday4,
+        'DIABETE4': diabete4,
+        'GENHLTH': genhlth,
+        'PHYSHLTH': physhlth,
+        'MENTHLTH': menthlth,
+        '_BMI5': bmi,
+        'WEIGHT2': weight,
+        'HEIGHT3': height,
+        'CHECKUP1': checkup1,
+        'MEDCOST1': medcost1,
+        '_TOTINDA': totinda
+    }
+
+    if st.button("Assess Risk"):
+        st.session_state.features = features
+        st.session_state.run = True
+
+# =========================
+# TAB 2 - RESULTS
+# =========================
+
+with tab2:
+
+    if 'run' in st.session_state:
+
+        lr, rf = predict(st.session_state.features)
+        avg = (lr + rf) / 2
+        category = get_risk_category(avg)
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=avg * 100,
+            title={'text': "Overall Risk (%)"},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': "black"},
+                'steps': [
+                    {'range': [0, 15], 'color': "lightgreen"},
+                    {'range': [15, 30], 'color': "orange"},
+                    {'range': [30, 100], 'color': "red"}
+                ]
+            }
+        ))
+
+        st.plotly_chart(fig, use_container_width=True)
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("Logistic Regression", f"{lr*100:.1f}%")
+        col2.metric("Random Forest", f"{rf*100:.1f}%")
+        col3.metric("Average Risk", f"{avg*100:.1f}%")
+        st.subheader("Risk Level")
+        st.write(f"Estimated category: {category}")
+
+        st.subheader("Recommendations")
+        recommendations = []
+
+        if st.session_state.features['SMOKE100'] == 1:
+            recommendations.append("Consider quitting smoking to reduce cardiovascular risk.")
+
+        if st.session_state.features['_BMI5'] > 25:
+            recommendations.append("Weight management may help reduce your risk.")
+
+        if st.session_state.features['_TOTINDA'] == 1:
+            recommendations.append("Increase physical activity (at least 150 minutes per week).")
+
+        if st.session_state.features['GENHLTH'] >= 3:
+            recommendations.append("Consider consulting a healthcare provider for a full checkup.")
+
+        if st.session_state.features['DIABETE4'] == 1:
+            recommendations.append("Proper diabetes management is important for heart health.")
+
+        if len(recommendations) == 0:
+            st.write("No major risk factors identified. Continue maintaining a healthy lifestyle.")
+        else:
+            for rec in recommendations:
+                st.write(f"- {rec}")
+      
+        st.subheader("Key Inputs")
+        st.table(pd.DataFrame(st.session_state.features.items(), columns=["Feature", "Value"]))
+        
+    else:
+        st.write("Enter details in the Assessment tab and click Assess Risk.")
+
+# =========================
+# TAB 3 - ABOUT
+# =========================
+
+with tab3:
+    st.write("This tool estimates cardiovascular risk based on behavioral and health data.")
+    st.write("It is intended for educational purposes and not as a medical diagnosis tool.")
