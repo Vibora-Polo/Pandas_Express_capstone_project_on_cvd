@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 # ============================================================================
 st.set_page_config(
     page_title="CVD Risk Screening",
-    page_icon="❤️",
+    page_icon=" ",
     layout="wide"
 )
 
@@ -98,11 +98,11 @@ lr_model, rf_model, scaler, feature_names = train_and_get_models()
 def get_risk_category(prob):
     """Categorize risk level"""
     if prob < 0.15:
-        return "🟢 LOW RISK", "green"
+        return "LOW RISK", "green"
     elif prob < 0.35:
-        return "🟡 MODERATE RISK", "orange"
+        return "MODERATE RISK", "orange"
     else:
-        return "🔴 HIGH RISK", "red"
+        return "HIGH RISK", "red"
 
 def predict_risk(user_input):
     """
@@ -144,17 +144,16 @@ def predict_risk(user_input):
 # ============================================================================
 # MAIN APP UI
 # ============================================================================
-st.title("❤️ Cardiovascular Risk Screening Tool")
+st.title(" Cardiovascular Risk Screening Tool")
 st.markdown("""
 ### For Kenyans: A Machine Learning Approach to CVD Prevention
 
-**⚠️ DISCLAIMER:** This is a research tool for educational purposes only. 
-NOT a replacement for medical diagnosis. Always consult healthcare professionals.
+** DISCLAIMER:** NOT a replacement for medical diagnosis. Always consult healthcare professionals.
 """)
 
 # Sidebar
 with st.sidebar:
-    st.markdown("## 📋 Instructions")
+    st.markdown("## Instructions")
     st.markdown("""
     1. Enter your health information
     2. Click "Calculate Risk"
@@ -247,7 +246,7 @@ activity = 1 if exercise == 1 else 2
 # ============================================================================
 # CALCULATE RISK BUTTON
 # ============================================================================
-if st.button("🔍 Calculate Risk Score", key="calc", use_container_width=True):
+if st.button("Calculate Risk Score", key="calc", use_container_width=True):
     
     # Prepare user input
     user_data = {
@@ -275,7 +274,7 @@ if st.button("🔍 Calculate Risk Score", key="calc", use_container_width=True):
     if avg_prob is not None:
         # Display results
         st.divider()
-        st.subheader("📊 Your Risk Assessment Results")
+        st.subheader("Your Risk Assessment Results")
         
         risk_label, risk_color = get_risk_category(avg_prob)
         
@@ -293,7 +292,7 @@ if st.button("🔍 Calculate Risk Score", key="calc", use_container_width=True):
         st.markdown(f"### {risk_label}")
         
         # Recommendations
-        st.markdown("### 💡 Recommendations")
+        st.markdown("### Recommendations")
         
         if avg_prob > 0.35:
             st.error("""
