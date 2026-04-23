@@ -29,7 +29,7 @@ def load_models():
 lr_model, rf_model, scaler = load_models()
 
 # =========================
-# FEATURE ORDER (IMPORTANT)
+# FEATURE ORDER
 # =========================
 
 FEATURE_NAMES = [
@@ -90,18 +90,18 @@ with tab1:
 
     with col1:
         age_map = {
-    "18–24": 1,
-    "25–29": 2,
-    "30–34": 3,
-    "35–39": 4,
-    "40–44": 5,
-    "45–49": 6,
-    "50–54": 7,
-    "55–59": 8,
-    "60–64": 9,
-    "65–69": 10,
-    "70–74": 11,
-    "75–79": 12,
+    "18-24": 1,
+    "25-29": 2,
+    "30-34": 3,
+    "35-39": 4,
+    "40-44": 5,
+    "45-49": 6,
+    "50-54": 7,
+    "55-59": 8,
+    "60-64": 9,
+    "65-69": 10,
+    "70-74": 11,
+    "75-79": 12,
     "80+": 13
 }
 
@@ -142,8 +142,8 @@ with tab1:
     with col6:
         checkup_map = {
             "Within the past year": 1,
-            "1–2 years ago": 2,
-            "2–5 years ago": 3,
+            "1-2 years ago": 2,
+            "2-5 years ago": 3,
             "More than 5 years ago": 4,
             "Never": 5
         }
