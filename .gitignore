@@ -14,4 +14,4 @@ streamlit_env/
 venv/
 #ignore python cache
 _pycache_/
-*.pyc 
+*.pyc data/raw/
