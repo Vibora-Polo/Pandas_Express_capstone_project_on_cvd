@@ -17,7 +17,6 @@ st.set_page_config(
     page_icon=" ",
     layout="wide"
 )
-
 # ============================================================================
 # TRAIN MODELS ONCE ON APP STARTUP (FIXES VERSION MISMATCH)
 # ============================================================================
