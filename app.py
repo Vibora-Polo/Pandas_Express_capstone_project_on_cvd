@@ -149,7 +149,7 @@ st.markdown("""
 <div style='text-align: center; padding: 10px'>
     <h1>🫀CVD Risk Screening Tool</h1>
     <p style='color: gray; font-size: 16px;'>
-        AI-powered early detection for cardiovascular disease risk
+        Early detection for cardiovascular disease risk
     </p>
 </div>
 """, unsafe_allow_html=True)
